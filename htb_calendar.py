@@ -3,6 +3,7 @@ import hashlib
 import sqlite3
 from flask import Flask, Response
 from ics import Calendar, Event
+from datetime import datetime
 
 SECRET_KEY = "your_secret_key_here"
 
@@ -42,16 +43,21 @@ def fetch_notice_for_event(event_name, db_name="notices.db"):
 def generate_machines_calendar():
     """
     Generate a calendar for all HTB Machines from the database.
-    Includes Notices if available.
+    Includes Notices if available and excludes past events.
     """
     calendar = Calendar()
     machines = fetch_from_db("machines.db", "tracked_machines")
+    current_date = datetime.now()
 
     # Add events for each machine
     for machine in machines:
+        release_date = datetime.fromisoformat(machine[4])  # machine[4] -> release_date
+        if release_date < current_date:
+            continue  # Skip past events
+
         event = Event()
         event.name = f"Machine: {machine[1]}"  # machine[1] -> name
-        event.begin = machine[4]  # machine[4] -> release_date
+        event.begin = release_date.isoformat()
         event.description = f"Difficulty: {machine[3]}, OS: {machine[2]}"  # machine[3] -> difficulty, machine[2] -> OS
 
         # Fetch and append notice if available
@@ -72,16 +78,21 @@ def generate_machines_calendar():
 def generate_challenges_calendar():
     """
     Generate a calendar for all HTB Challenges from the database.
-    Includes Notices if available.
+    Includes Notices if available and excludes past events.
     """
     calendar = Calendar()
     challenges = fetch_from_db("challenges.db", "tracked_challenges")
+    current_date = datetime.now()
 
     # Add events for each challenge
     for challenge in challenges:
+        release_date = datetime.fromisoformat(challenge[4])  # challenge[4] -> release_date
+        if release_date < current_date:
+            continue  # Skip past events
+
         event = Event()
         event.name = f"Challenge: {challenge[1]}"  # challenge[1] -> name
-        event.begin = challenge[4]  # challenge[4] -> release_date
+        event.begin = release_date.isoformat()
         event.description = f"Difficulty: {challenge[2]}, Category: {challenge[3]}"  # challenge[2] -> difficulty, challenge[3] -> category
 
         # Fetch and append notice if available
